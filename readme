@@ -1,0 +1,69 @@
+essthree
+========
+	
+	Tiny Java S3 client using avaje-jsonb & avaje-http-client.
+	Very small, secure and trivial.
+
+	pom.xml ===================================================
+	<repositories>
+		<repository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
+		</repository>
+	</repositories>
+	
+	<dependency>
+		<groupId>com.mechite</groupId>
+		<artifactId>essthree</artifactId>
+		<version><!-- insert latest commit id --></version>
+	</dependency>
+	===========================================================
+
+	module-info.java ============
+	requires com.mechite.esthree;
+	=============================
+  
+Goals
+=====
+	
+	1. to perform better than AWS SDK v2.x
+	2. be under 150kb at runtime (in total, including avaje libraries)
+	
+	3. to function correctly on, ideally be tested on:
+		- Amazon S3
+		- MinIO
+		- Garage
+		- Ceph
+		- CloudFlare R2
+		- Backblaze B2
+		- DigitalOcean Spaces
+		- Oracle Object Storage
+	
+	4. to support essential subset of S3 features:
+		
+		- CreateBucket
+		- HeadBucket
+		- ListBuckets
+
+		- ListObjectsV2
+		- GetObject
+		- PutObject
+		- DeleteObject
+		- DeleteObjects
+		- HeadObject
+
+		- ListMultipartUploads
+		- CreateMultipartUpload
+		- CompleteMultipartUpload
+		- AbortMultipartUpload
+
+		- UploadPart
+		- CopyObject
+
+Security
+========
+
+	1. The library suppresses sensitive information when logging.
+	2. No warranty is provided for any data loss / security breaches resulting from improper usage.
+	3. Techncial "bail out" can be performed simply by using the underlying `HttpClient`.
+	4. If you find a security vulnerability, please report it to "esthree@mechite.com".
