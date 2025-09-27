@@ -1,8 +1,9 @@
-essthree
-========
-	
-	Tiny Java S3 client using avaje-jsonb & avaje-http-client.
-	Very small, secure and trivial.
+esthree
+=======
+
+	Tiny Java S3 client using avaje-http-client & JDK's built in XML parsing.
+	Very small, secure and trivial. Requires Java >11.
+	Virtual Threads compatible on Java >21.
 
 	pom.xml ===================================================
 	<repositories>
@@ -11,10 +12,10 @@ essthree
 			<url>https://jitpack.io</url>
 		</repository>
 	</repositories>
-	
+
 	<dependency>
 		<groupId>com.mechite</groupId>
-		<artifactId>essthree</artifactId>
+		<artifactId>esthree</artifactId>
 		<version><!-- insert latest commit id --></version>
 	</dependency>
 	===========================================================
@@ -22,14 +23,17 @@ essthree
 	module-info.java ============
 	requires com.mechite.esthree;
 	=============================
-  
+
 Goals
 =====
-	
+
 	1. to perform better than AWS SDK v2.x
 	2. be under 150kb at runtime (in total, including avaje libraries)
-	
-	3. to function correctly on, ideally be tested on:
+	3. to implement full support for AWS Signature v4
+	4. to be smooth to migrate to, coming from AWS SDK v2.x
+
+	5. to function correctly on, ideally be tested on:
+
 		- Amazon S3
 		- MinIO
 		- Garage
@@ -38,9 +42,9 @@ Goals
 		- Backblaze B2
 		- DigitalOcean Spaces
 		- Oracle Object Storage
-	
-	4. to support essential subset of S3 features:
-		
+
+	6. to support essential subset of S3 features:
+
 		- CreateBucket
 		- HeadBucket
 		- ListBuckets
@@ -51,19 +55,19 @@ Goals
 		- DeleteObject
 		- DeleteObjects
 		- HeadObject
+		- CopyObject
 
 		- ListMultipartUploads
 		- CreateMultipartUpload
 		- CompleteMultipartUpload
 		- AbortMultipartUpload
-
 		- UploadPart
-		- CopyObject
 
 Security
 ========
 
 	1. The library suppresses sensitive information when logging.
 	2. No warranty is provided for any data loss / security breaches resulting from improper usage.
-	3. Techncial "bail out" can be performed simply by using the underlying `HttpClient`.
-	4. If you find a security vulnerability, please report it to "esthree@mechite.com".
+	3. XXE hardening is a lower priority, over compatibility & portability. The S3 host is considered a trusted host.
+	4. Technical "bail out" can be performed simply by using the underlying `HttpClient`.
+	5. If you find a security vulnerability, please report it to "esthree@mechite.com".
