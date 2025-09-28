@@ -2,7 +2,7 @@ package com.mechite.esthree;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.MessageDigest;
+import java.util.StringJoiner;
 
 import static java.nio.charset.StandardCharsets.*;
 
@@ -14,7 +14,8 @@ final class DEsthreeSignedStream extends InputStream {
 
 	private final InputStream source;
 	private final DEsthreeSigner signer;
-	private final MessageDigest sha256;
+	private final String date;
+	private final String region;
 	private final byte[] signingKey;
 
 	private byte[] previous;
@@ -22,10 +23,11 @@ final class DEsthreeSignedStream extends InputStream {
 	private int bufferPosition = 0;
 	private int bufferLimit = 0;
 
-	DEsthreeSignedStream(InputStream source, DEsthreeSigner signer, MessageDigest sha256, String date, String candidate) {
+	DEsthreeSignedStream(InputStream source, DEsthreeSigner signer, String date, String region, String candidate) {
 		this.source = source;
 		this.signer = signer;
-		this.sha256 = sha256;
+		this.date = date;
+		this.region = region;
 
 		this.signingKey = signer.signingKey(date.substring(0, 8));
 		this.previous = signer.hmac(this.signingKey, candidate);
@@ -35,7 +37,7 @@ final class DEsthreeSignedStream extends InputStream {
 
 	@Override
 	public int read() throws IOException {
-		if (bufferPosition >= bufferLimit && !this.fillBuffer()) return -1;
+		if (bufferPosition >= bufferLimit && this.refillBuffer()) return -1;
 		return buffer[bufferPosition++] & 0xFF;
 	}
 
@@ -43,7 +45,7 @@ final class DEsthreeSignedStream extends InputStream {
 	public int read(byte[] buffer, int offset, int length) throws IOException {
 		int count = 0;
 		while (length > 0) {
-			if (this.bufferPosition >= this.bufferLimit && !this.fillBuffer()) break;
+			if (this.bufferPosition >= this.bufferLimit && this.refillBuffer()) break;
 
 			int copy = Math.min(length, this.bufferLimit - this.bufferPosition);
 			System.arraycopy(this.buffer, this.bufferPosition, buffer, offset, copy);
@@ -56,8 +58,16 @@ final class DEsthreeSignedStream extends InputStream {
 		return (count == 0) ? -1 : count;
 	}
 
-	/** Read some bytes from {@link #source} and allocate buffer, with space for chunk size & signature. */
-	private boolean fillBuffer() throws IOException {
+	@Override
+	public int available() {
+		return this.bufferLimit - this.bufferPosition;
+	}
+
+	/**
+	 * Read some bytes from {@link #source} and allocate buffer, with space for chunk size & signature.
+	 * Returns {@code true} if EOF is reached, otherwise {@code false} for successful buffer refilling.
+	 */
+	private boolean refillBuffer() throws IOException {
 		byte[] chunk = new byte[16 * 1024];
 
 		int read = this.source.read(chunk);
@@ -65,7 +75,7 @@ final class DEsthreeSignedStream extends InputStream {
 			this.buffer = this.buildChunk(new byte[0]);
 			this.bufferPosition = 0;
 			this.bufferLimit = this.buffer.length;
-			return (this.bufferLimit > 0);
+			return (this.bufferLimit == 0);
 		}
 
 		byte[] actual = new byte[read];
@@ -74,14 +84,23 @@ final class DEsthreeSignedStream extends InputStream {
 		this.buffer = this.buildChunk(actual);
 		this.bufferPosition = 0;
 		this.bufferLimit = this.buffer.length;
-		return true;
+		return false;
 	}
 
 	/** Build a chunk from the provided read chunk, from the regular {@link InputStream}. */
-	private byte[] buildChunk(byte[] payload) throws IOException {
-		String hash = this.signer.hex(this.sha256.digest(payload));
-		String candidate = this.signer.hex(this.previous) + hash; // todo - full impl here of string-to-sign format
-		byte[] signature = this.signer.hmac(signingKey, candidate);
+	private byte[] buildChunk(byte[] payload) {
+		String hash = this.signer.hex(this.signer.sha256(payload));
+
+		String scope = this.date.substring(0, 8) + "/" + this.region + "/s3/aws4_request";
+		String candidate = new StringJoiner("\n")
+				.add("AWS4-HMAC-SHA256-PAYLOAD")
+				.add(this.date)
+				.add(scope)
+				.add(this.signer.hex(this.previous))
+				.add(hash)
+				.toString();
+
+		byte[] signature = this.signer.hmac(this.signingKey, candidate);
 		this.previous = signature;
 
 		byte[] header = (Integer.toHexString(payload.length) + ";" + this.signer.hex(signature) + "\r\n").getBytes(UTF_8);

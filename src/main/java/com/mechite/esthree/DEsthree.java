@@ -2,11 +2,12 @@ package com.mechite.esthree;
 
 import io.avaje.http.client.HttpClient;
 import org.jspecify.annotations.Nullable;
+import org.xml.sax.SAXException;
 
-import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.IOException;
 
 import static com.mechite.esthree.Esthree.Region.*;
 import static javax.xml.XMLConstants.*;

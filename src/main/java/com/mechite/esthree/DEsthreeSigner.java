@@ -13,6 +13,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.StringJoiner;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static java.nio.charset.StandardCharsets.*;
 import static java.time.ZoneOffset.*;
@@ -28,6 +29,9 @@ final class DEsthreeSigner implements EsthreeSigner {
 	private final MessageDigest sha256;
 	private final Mac hmacSha256;
 
+	private final ReentrantLock lockSha256;
+	private final ReentrantLock lockHmacSha256;
+
 	DEsthreeSigner(String accessKey, String secretKey, String region) {
 		this.accessKey = accessKey;
 		this.secretKey = secretKey;
@@ -37,6 +41,9 @@ final class DEsthreeSigner implements EsthreeSigner {
 			this.formatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(UTC);
 			this.sha256 = MessageDigest.getInstance("SHA-256");
 			this.hmacSha256 = Mac.getInstance("HmacSHA256");
+
+			this.lockSha256 = new ReentrantLock();
+			this.lockHmacSha256 = new ReentrantLock();
 		} catch (NoSuchAlgorithmException exception) {
 			throw new IllegalStateException("Failed to obtain security provider for Esthree Signer", exception);
 		}
@@ -44,7 +51,7 @@ final class DEsthreeSigner implements EsthreeSigner {
 
 	@Override
 	public void sign(HttpClientRequest request, BodyContent body) {
-		String hash = hex(this.sha256.digest(body.content()));
+		String hash = hex(sha256(body.content()));
 		this.sign(request, hash, Instant.now());
 	}
 
@@ -54,7 +61,7 @@ final class DEsthreeSigner implements EsthreeSigner {
 		Instant instant = Instant.now();
 
 		String candidate = this.sign(request, hash, instant);
-		return new DEsthreeSignedStream(stream, this, this.sha256, this.formatter.format(instant), candidate);
+		return new DEsthreeSignedStream(stream, this, this.formatter.format(instant), this.region, candidate);
 	}
 
 	/**
@@ -84,7 +91,7 @@ final class DEsthreeSigner implements EsthreeSigner {
 				.add(headers)
 				.add(hash)
 				.toString();
-		String canonicalHash = hex(this.sha256.digest(canonical.getBytes(UTF_8)));
+		String canonicalHash = hex(sha256(canonical.getBytes(UTF_8)));
 
 		String scope = date + "/" + this.region + "/s3/aws4_request";
 		String candidate = new StringJoiner("\n")
@@ -114,13 +121,26 @@ final class DEsthreeSigner implements EsthreeSigner {
 		return this.hmac(serviceKey, "aws4_request");
 	}
 
+	/** Generate a SHA256 digest for the provided input. */
+	byte[] sha256(byte[] input) {
+		try {
+			this.lockSha256.lock();
+			return this.sha256.digest(input);
+		} finally {
+			this.lockSha256.unlock();
+		}
+	}
+
 	/** Generate a HMAC with the provided key for the provided payload. */
 	byte[] hmac(byte[] key, String data) {
 		try {
+			this.lockHmacSha256.lock();
 			this.hmacSha256.init(new SecretKeySpec(key, "HmacSHA256"));
 			return this.hmacSha256.doFinal(data.getBytes(UTF_8));
 		} catch (InvalidKeyException exception) {
 			throw new IllegalStateException("Invalid key during HMAC SHA256 signing in Esthree Signer", exception);
+		} finally {
+			this.lockHmacSha256.unlock();
 		}
 	}
 

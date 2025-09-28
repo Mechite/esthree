@@ -6,11 +6,13 @@
     <version>1.0</version>
 
 	<name>esthree</name>
-	<description>tiny Java S3 client using avaje libraries</description>
+	<description>Tiny Java S3 client using avaje-http-client &amp; JDK's built-in XML parsing</description>
 
 	<properties>
 		<java.version>11</java.version>
+		<groovy.version>4.0.21</groovy.version>
 		<avaje-http.version>3.4</avaje-http.version>
+		<spock.version>2.3-groovy-4.0</spock.version>
 
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -25,7 +27,6 @@
 			<artifactId>avaje-http-client</artifactId>
 			<version>${avaje-http.version}</version>
 		</dependency>
-
 		<dependency>
 			<groupId>org.jspecify</groupId>
 			<artifactId>jspecify</artifactId>
