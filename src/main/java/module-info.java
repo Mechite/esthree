@@ -1,7 +1,8 @@
 module com.mechite.esthree {
+	requires java.xml;
+
 	requires io.avaje.http.client;
 	requires org.jspecify;
-	requires java.xml;
 
 	exports com.mechite.esthree;
 }

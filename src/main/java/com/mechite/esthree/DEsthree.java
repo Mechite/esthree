@@ -8,6 +8,8 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
 import static com.mechite.esthree.Esthree.Region.*;
 import static javax.xml.XMLConstants.*;
@@ -28,6 +30,16 @@ final class DEsthree implements Esthree {
 	@Override
 	public void close() {
 		this.client.close();
+	}
+
+	@Override
+	public Stream<Bucket> buckets() {
+		return Stream.empty();
+	}
+
+	@Override
+	public CompletableFuture<Stream<Bucket>> bucketsFuture() {
+		return null;
 	}
 
 	@Override

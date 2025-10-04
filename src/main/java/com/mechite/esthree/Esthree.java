@@ -5,6 +5,8 @@ import io.avaje.http.client.HttpClient;
 import java.net.URI;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.stream.Stream;
 
 /**
  * Service client for accessing S3. This can be created using the static {@link #builder()}
@@ -28,6 +30,20 @@ import java.util.concurrent.CompletableFuture;
  * }</pre>
  */
 public interface Esthree extends AutoCloseable {
+
+	/**
+	 * Returns a {@link Stream} of {@link Bucket}s, which iterates pages when a terminal
+	 * operation is executed. This will lazily load the listing recursively using AWS pagination.
+	 * <p>
+	 * A {@link Stream} is used to prevent extraneous requests being made, as a contract to
+	 * define that the {@link Bucket}s should only be consumed once, and if such iterating view
+	 * is unsuitable, {@link Stream#collect}/{@link Stream#toList()} can be used to obtain a
+	 * persistent view.
+	 */
+	Stream<Bucket> buckets();
+
+	/** {@link Future}-based variant of {@link #buckets()}. */
+	CompletableFuture<Stream<Bucket>> bucketsFuture();
 
 	/** Access the underlying {@link HttpClient}. Most people should never use this method. */
 	HttpClient httpClient();
